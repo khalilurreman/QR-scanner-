@@ -1,65 +1,89 @@
-we<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional QR Scanner</title>
+    <title>MyOrbit Pro Scanner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { width: 90%; max-width: 400px; text-align: center; background: #1e1e1e; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        h1 { font-size: 22px; color: #007bff; margin-bottom: 10px; }
-        #reader { width: 100%; border-radius: 15px; overflow: hidden; border: 2px solid #333; margin-bottom: 20px; }
-        .result-card { background: #2a2a2a; padding: 15px; border-radius: 10px; border-left: 5px solid #007bff; text-align: left; }
-        #result { color: #00ff00; word-break: break-all; margin-top: 5px; }
-        .ad-placeholder { margin-top: 20px; padding: 10px; border: 1px dashed #555; font-size: 12px; color: #777; }
-        button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px; width: 100%; font-weight: bold; }
+        :root { --primary-color: #1a73e8; --success-color: #28a745; --bg-color: #f8f9fa; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-color); display: flex; justify-content: center; padding-top: 50px; margin: 0; }
+        .scanner-card { background: white; padding: 25px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); width: 90%; max-width: 450px; text-align: center; }
+        #reader { border-radius: 15px; overflow: hidden; border: 2px solid #ddd !important; }
+        .result-box { margin-top: 20px; padding: 15px; border-radius: 10px; background: #f1f3f4; display: none; border-left: 5px solid var(--primary-color); }
+        .scanned-data { word-break: break-all; font-size: 14px; color: #333; margin: 10px 0; font-weight: bold; }
+        .button-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; flex-wrap: wrap; }
+        .btn { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.3s; }
+        .btn-copy { background: #e1f5fe; color: #01579b; }
+        .btn-download { background: #e8f5e9; color: #1b5e20; }
+        .btn-reset { background: var(--primary-color); color: white; width: 100%; margin-top: 10px; }
+        .btn:hover { opacity: 0.8; transform: translateY(-2px); }
+        #status-msg { margin-top: 10px; font-size: 12px; color: var(--success-color); font-weight: bold; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <h1>QR Scanner Pro</h1>
-    <p style="font-size: 14px; color: #bbb;">Point your camera at a QR code</p>
-    
+<div class="scanner-card">
+    <h2 style="margin-top:0;">MyOrbit QR Scanner</h2>
     <div id="reader"></div>
-
-    <div class="result-card">
-        <strong>Scanned Data:</strong>
-        <div id="result">Scanning...</div>
+    
+    <div id="result-area" class="result-box">
+        <strong>Result Found:</strong>
+        <p id="scanned-text" class="scanned-data"></p>
+        
+        <div class="button-group">
+            <button class="btn btn-copy" onclick="copyToClipboard()">📋 Copy Code</button>
+            <button class="btn btn-download" onclick="downloadResult()">📥 Download TXT</button>
+        </div>
+        <button class="btn btn-reset" onclick="location.reload()">Scan Another</button>
+        <p id="status-msg"></p>
     </div>
-
-    <div class="ad-placeholder">Advertisement Space (AdSense)</div>
 </div>
 
 <script>
-    function onScanSuccess(decodedText, decodedResult) {
-        // Sound or Alert on success
-        document.getElementById('result').innerHTML = `<a href="${decodedText}" target="_blank" style="color: #00ff00;">${decodedText}</a>`;
+    let lastResult = "";
+
+    function onScanSuccess(decodedText) {
+        lastResult = decodedText;
+        html5QrcodeScanner.clear(); // Stop camera
         
-        // Stop scanning after success to save battery
-        // html5QrcodeScanner.clear(); 
+        document.getElementById('result-area').style.display = 'block';
+        document.getElementById('scanned-text').innerText = decodedText;
     }
 
-    function onScanFailure(error) {
-        // Ignore minor scan errors
+    // 1. Copy to Clipboard Function
+    function copyToClipboard() {
+        navigator.clipboard.writeText(lastResult).then(() => {
+            showStatus("Copied to Clipboard!");
+        });
     }
 
-    let html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader", 
-        { fps: 20, qrbox: {width: 250, height: 250} }
-    );
-    
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    // 2. Download as Text File Function
+    function downloadResult() {
+        const element = document.createElement("a");
+        const file = new Blob([lastResult], {type: 'text/plain'});
+        element.href = URL.createObjectURL(file);
+        element.download = "MyOrbit_Scan_Result.txt";
+        document.body.appendChild(element);
+        element.click();
+        showStatus("Downloading file...");
+    }
+
+    function showStatus(msg) {
+        const status = document.getElementById('status-msg');
+        status.innerText = msg;
+        setTimeout(() => status.innerText = "", 3000);
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+        fps: 20, 
+        qrbox: {width: 250, height: 250} 
+    });
+    html5QrcodeScanner.render(onScanSuccess);
 </script>
 
 </body>
 </html>
-<div id="result-screen">
-    ...
-    <div style="margin-top:30px;">
-        </div>
-</div>,
 <div id="result-screen">
     ...
     <div style="margin-top:30px;">
