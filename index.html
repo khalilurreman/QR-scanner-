@@ -3,138 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro QR Scanner</title>
+    <title>Pro QR Scanner & Gallery</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        /* Force Full Screen Layout */
         body, html { 
             margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #000; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #000; font-family: sans-serif; 
             overflow: hidden; color: white; 
         }
         
-        /* Camera Container */
+        /* Full Screen Camera */
         #reader { 
             width: 100vw !important; height: 100vh !important; 
             position: fixed; top: 0; left: 0; border: none !important; 
         }
         
-        /* Ensure video covers the entire screen */
         #reader__scan_region video { 
             object-fit: cover !important; 
             width: 100vw !important; height: 100vh !important; 
         }
 
-        /* Scanning UI Overlay */
-        .overlay { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            display: flex; justify-content: center; align-items: center; 
-            z-index: 5; pointer-events: none; 
-        }
-        .scan-box { 
-            width: 280px; height: 280px; 
-            border: 4px solid #25D366; border-radius: 24px; 
-            box-shadow: 0 0 0 2000px rgba(0,0,0,0.6); 
+        /* Gallery Button Overlay */
+        .gallery-overlay {
+            position: fixed; bottom: 30px; left: 50%;
+            transform: translateX(-50%); z-index: 10;
         }
 
-        /* Result Screen (Hidden by default) */
+        /* Result Screen */
         #result-screen {
             display: none; position: fixed; top: 0; left: 0; 
             width: 100%; height: 100%; background: #121212; 
             flex-direction: column; justify-content: center; 
-            align-items: center; padding: 30px; box-sizing: border-box; 
+            align-items: center; padding: 20px; box-sizing: border-box; 
             z-index: 100; text-align: center;
         }
 
-        .result-display { 
-            background: #1e1e1e; padding: 25px; border-radius: 20px; 
-            border: 2px solid #25D366; color: #ffffff; 
-            word-break: break-all; width: 90%; font-size: 20px; 
-            margin-bottom: 30px; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        .result-box { 
+            background: #1e1e1e; padding: 25px; border-radius: 15px; 
+            border: 2px solid #007bff; color: #00ff00; 
+            word-break: break-all; width: 85%; font-size: 20px; 
+            margin-bottom: 30px; 
         }
 
-        /* WhatsApp Button Style */
-        .btn-whatsapp { 
-            padding: 18px 40px; background: #25D366; color: white; 
-            border: none; border-radius: 50px; font-weight: bold; 
-            cursor: pointer; font-size: 18px; text-decoration: none; 
-            display: inline-block; transition: 0.3s;
+        .btn { 
+            padding: 15px 35px; border: none; border-radius: 50px; 
+            font-weight: bold; cursor: pointer; font-size: 16px; 
+            text-decoration: none; display: inline-block;
         }
-        
-        .btn-retry { 
-            margin-top: 25px; color: #aaaaaa; background: none; 
-            border: none; cursor: pointer; text-decoration: underline; 
-            font-size: 16px;
-        }
-
-        .ad-container {
-            margin-top: 40px; color: #444; font-size: 12px;
-            border: 1px dashed #333; padding: 10px; width: 80%;
-        }
+        .btn-blue { background: #007bff; color: white; }
+        .btn-wa { background: #25D366; color: white; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
     <div id="reader"></div>
 
-    <div class="overlay" id="overlay">
-        <div class="scan-box"></div>
+    <div class="gallery-overlay" id="gallery-btn-container">
+        <label for="gallery-input" class="btn btn-blue">Scan from Gallery</label>
+        <input type="file" id="gallery-input" accept="image/*" style="display:none;">
     </div>
 
     <div id="result-screen">
-        <h1 style="color: #25D366; margin-bottom: 10px;">Code Detected!</h1>
-        <p style="color: #888;">Content found in QR code:</p>
+        <h1 style="color: #007bff;">Result Found</h1>
+        <div id="scanned-data" class="result-box">Scanning...</div>
         
-        <div id="scanned-result" class="result-display"></div>
-        
-        <a id="share-whatsapp" href="#" class="btn-whatsapp">Share on WhatsApp</a>
-        
-        <button class="btn-retry" onclick="location.reload()">Scan Another Code</button>
-
-        <div class="ad-container">Advertisement Space (AdSense)</div>
+        <a id="whatsapp-link" href="#" class="btn btn-wa">Share on WhatsApp</a>
+        <button class="btn btn-blue" onclick="location.reload()">Back to Camera</button>
     </div>
 
 <script>
-    // Initialize Scanner targeting the 'reader' div
     const html5QrCode = new Html5Qrcode("reader");
-    
-    // Configuration for High Performance & Full Screen
-    const qrConfig = { 
-        fps: 30, 
-        qrbox: { width: 280, height: 280 },
-        aspectRatio: window.innerWidth / window.innerHeight 
-    };
+    const resultScreen = document.getElementById('result-screen');
+    const galleryBtn = document.getElementById('gallery-btn-container');
 
-    // Start Scanning using the Back Camera (environment mode)
+    // 1. Start Camera (Back Camera Only)
     html5QrCode.start(
         { facingMode: "environment" }, 
-        qrConfig,
+        { fps: 30, aspectRatio: window.innerWidth / window.innerHeight },
         (decodedText) => {
-            // SUCCESS: 1. Stop the camera feed immediately
-            html5QrCode.stop().then(() => {
-                // 2. Hide scanning UI
-                document.getElementById('reader').style.display = 'none';
-                document.getElementById('overlay').style.display = 'none';
-                
-                // 3. Show Result screen and text
-                document.getElementById('result-screen').style.display = 'flex';
-                document.getElementById('scanned-result').innerText = decodedText;
-                
-                // 4. Generate WhatsApp share link
-                const whatsappMsg = encodeURIComponent("Check this code: " + decodedText);
-                document.getElementById('share-whatsapp').href = `https://api.whatsapp.com/send?text=${whatsappMsg}`;
-
-                // Haptic feedback (Vibrate 200ms)
-                if (navigator.vibrate) navigator.vibrate(200);
-            }).catch(err => {
-                console.error("Failed to stop scanner: ", err);
-            });
+            showResult(decodedText);
         }
-    ).catch(err => {
-        // ERROR: Usually triggered if camera permission is denied or not using HTTPS
-        console.error("Camera Initialization Error: ", err);
-        alert("Camera Error: Please ensure you allow camera access and use HTTPS.");
+    ).catch(err => console.error(err));
+
+    // 2. Handle Gallery Image Selection
+    const fileInput = document.getElementById('gallery-input');
+    fileInput.addEventListener('change', e => {
+        if (e.target.files.length === 0) return;
+        const imageFile = e.target.files[0];
+
+        html5QrCode.scanFile(imageFile, true)
+            .then(decodedText => {
+                showResult(decodedText);
+            })
+            .catch(err => {
+                alert("No QR Code found in this image.");
+                console.error(err);
+            });
     });
+
+    // Function to stop camera and show the data
+    function showResult(text) {
+        html5QrCode.stop().then(() => {
+            document.getElementById('reader').style.display = 'none';
+            galleryBtn.style.display = 'none';
+            resultScreen.style.display = 'flex';
+            document.getElementById('scanned-data').innerText = text;
+
+            const waMsg = encodeURIComponent("Scanned: " + text);
+            document.getElementById('whatsapp-link').href = `https://api.whatsapp.com/send?text=${waMsg}`;
+            
+            if (navigator.vibrate) navigator.vibrate(200);
+        }).catch(err => {
+            // If already stopped (via gallery), just show results
+            document.getElementById('reader').style.display = 'none';
+            galleryBtn.style.display = 'none';
+            resultScreen.style.display = 'flex';
+            document.getElementById('scanned-data').innerText = text;
+        });
+    }
 </script>
 
 </body>
