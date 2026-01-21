@@ -1,130 +1,65 @@
-<!DOCTYPE html>
+we<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Pro QR Scanner & Gallery</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional QR Scanner</title>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        body, html { 
-            margin: 0; padding: 0; width: 100%; height: 100%; 
-            background: #000; font-family: sans-serif; 
-            overflow: hidden; color: white; 
-        }
-        
-        /* Full Screen Camera */
-        #reader { 
-            width: 100vw !important; height: 100vh !important; 
-            position: fixed; top: 0; left: 0; border: none !important; 
-        }
-        
-        #reader__scan_region video { 
-            object-fit: cover !important; 
-            width: 100vw !important; height: 100vh !important; 
-        }
-
-        /* Gallery Button Overlay */
-        .gallery-overlay {
-            position: fixed; bottom: 30px; left: 50%;
-            transform: translateX(-50%); z-index: 10;
-        }
-
-        /* Result Screen */
-        #result-screen {
-            display: none; position: fixed; top: 0; left: 0; 
-            width: 100%; height: 100%; background: #121212; 
-            flex-direction: column; justify-content: center; 
-            align-items: center; padding: 20px; box-sizing: border-box; 
-            z-index: 100; text-align: center;
-        }
-
-        .result-box { 
-            background: #1e1e1e; padding: 25px; border-radius: 15px; 
-            border: 2px solid #007bff; color: #00ff00; 
-            word-break: break-all; width: 85%; font-size: 20px; 
-            margin-bottom: 30px; 
-        }
-
-        .btn { 
-            padding: 15px 35px; border: none; border-radius: 50px; 
-            font-weight: bold; cursor: pointer; font-size: 16px; 
-            text-decoration: none; display: inline-block;
-        }
-        .btn-blue { background: #007bff; color: white; }
-        .btn-wa { background: #25D366; color: white; margin-bottom: 15px; }
+        body { font-family: 'Segoe UI', sans-serif; background: #121212; color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { width: 90%; max-width: 400px; text-align: center; background: #1e1e1e; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        h1 { font-size: 22px; color: #007bff; margin-bottom: 10px; }
+        #reader { width: 100%; border-radius: 15px; overflow: hidden; border: 2px solid #333; margin-bottom: 20px; }
+        .result-card { background: #2a2a2a; padding: 15px; border-radius: 10px; border-left: 5px solid #007bff; text-align: left; }
+        #result { color: #00ff00; word-break: break-all; margin-top: 5px; }
+        .ad-placeholder { margin-top: 20px; padding: 10px; border: 1px dashed #555; font-size: 12px; color: #777; }
+        button { background: #007bff; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; margin-top: 10px; width: 100%; font-weight: bold; }
     </style>
 </head>
 <body>
 
+<div class="container">
+    <h1>QR Scanner Pro</h1>
+    <p style="font-size: 14px; color: #bbb;">Point your camera at a QR code</p>
+    
     <div id="reader"></div>
 
-    <div class="gallery-overlay" id="gallery-btn-container">
-        <label for="gallery-input" class="btn btn-blue">Scan from Gallery</label>
-        <input type="file" id="gallery-input" accept="image/*" style="display:none;">
+    <div class="result-card">
+        <strong>Scanned Data:</strong>
+        <div id="result">Scanning...</div>
     </div>
 
-    <div id="result-screen">
-        <h1 style="color: #007bff;">Result Found</h1>
-        <div id="scanned-data" class="result-box">Scanning...</div>
-        
-        <a id="whatsapp-link" href="#" class="btn btn-wa">Share on WhatsApp</a>
-        <button class="btn btn-blue" onclick="location.reload()">Back to Camera</button>
-    </div>
+    <div class="ad-placeholder">Advertisement Space (AdSense)</div>
+</div>
 
 <script>
-    const html5QrCode = new Html5Qrcode("reader");
-    const resultScreen = document.getElementById('result-screen');
-    const galleryBtn = document.getElementById('gallery-btn-container');
-
-    // 1. Start Camera (Back Camera Only)
-    html5QrCode.start(
-        { facingMode: "environment" }, 
-        { fps: 30, aspectRatio: window.innerWidth / window.innerHeight },
-        (decodedText) => {
-            showResult(decodedText);
-        }
-    ).catch(err => console.error(err));
-
-    // 2. Handle Gallery Image Selection
-    const fileInput = document.getElementById('gallery-input');
-    fileInput.addEventListener('change', e => {
-        if (e.target.files.length === 0) return;
-        const imageFile = e.target.files[0];
-
-        html5QrCode.scanFile(imageFile, true)
-            .then(decodedText => {
-                showResult(decodedText);
-            })
-            .catch(err => {
-                alert("No QR Code found in this image.");
-                console.error(err);
-            });
-    });
-
-    // Function to stop camera and show the data
-    function showResult(text) {
-        html5QrCode.stop().then(() => {
-            document.getElementById('reader').style.display = 'none';
-            galleryBtn.style.display = 'none';
-            resultScreen.style.display = 'flex';
-            document.getElementById('scanned-data').innerText = text;
-
-            const waMsg = encodeURIComponent("Scanned: " + text);
-            document.getElementById('whatsapp-link').href = `https://api.whatsapp.com/send?text=${waMsg}`;
-            
-            if (navigator.vibrate) navigator.vibrate(200);
-        }).catch(err => {
-            // If already stopped (via gallery), just show results
-            document.getElementById('reader').style.display = 'none';
-            galleryBtn.style.display = 'none';
-            resultScreen.style.display = 'flex';
-            document.getElementById('scanned-data').innerText = text;
-        });
+    function onScanSuccess(decodedText, decodedResult) {
+        // Sound or Alert on success
+        document.getElementById('result').innerHTML = `<a href="${decodedText}" target="_blank" style="color: #00ff00;">${decodedText}</a>`;
+        
+        // Stop scanning after success to save battery
+        // html5QrcodeScanner.clear(); 
     }
+
+    function onScanFailure(error) {
+        // Ignore minor scan errors
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", 
+        { fps: 20, qrbox: {width: 250, height: 250} }
+    );
+    
+    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
 </script>
 
 </body>
 </html>
+<div id="result-screen">
+    ...
+    <div style="margin-top:30px;">
+        </div>
+</div>,
 <div id="result-screen">
     ...
     <div style="margin-top:30px;">
